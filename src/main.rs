@@ -15,13 +15,13 @@ fn main() -> Result<()> {
 
                 let flags = dns::Flags::default().with_qr_indicator(1).into();
 
-                let response = dns::Header {
+                let header = dns::Header {
                     packet_identifier: 1234,
                     flags,
                     ..dns::Header::default()
                 };
 
-                let header_buf = build_header_be_bytes_buf(response);
+                let header_buf: [u8; 12] = header.into();
 
                 let response = bincode::encode_to_vec(header_buf, bincode::config::standard())?;
                 udp_socket
@@ -38,15 +38,4 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn build_header_be_bytes_buf(response: dns::Header) -> [u8; 12] {
-    let mut buffer = [0u8; 12];
 
-    buffer[0..2].copy_from_slice(&response.packet_identifier.to_be_bytes());
-    buffer[2..4].copy_from_slice(&response.flags.to_be_bytes());
-    buffer[4..6].copy_from_slice(&response.qd_count.to_be_bytes());
-    buffer[6..8].copy_from_slice(&response.an_count.to_be_bytes());
-    buffer[8..10].copy_from_slice(&response.ns_count.to_be_bytes());
-    buffer[10..12].copy_from_slice(&response.ar_count.to_be_bytes());
-
-    buffer
-}

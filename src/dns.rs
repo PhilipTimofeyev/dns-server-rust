@@ -10,6 +10,21 @@ pub struct Header {
     pub ar_count: u16,
 }
 
+impl From<Header> for [u8; 12] {
+    fn from(header: Header) -> [u8; 12] {
+        let mut buffer = [0u8; 12];
+
+        buffer[0..2].copy_from_slice(&header.packet_identifier.to_be_bytes());
+        buffer[2..4].copy_from_slice(&header.flags.to_be_bytes());
+        buffer[4..6].copy_from_slice(&header.qd_count.to_be_bytes());
+        buffer[6..8].copy_from_slice(&header.an_count.to_be_bytes());
+        buffer[8..10].copy_from_slice(&header.ns_count.to_be_bytes());
+        buffer[10..12].copy_from_slice(&header.ar_count.to_be_bytes());
+
+        buffer
+    }
+}
+
 #[bitfield]
 #[derive(Debug)]
 pub struct Flags {
