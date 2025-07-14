@@ -21,9 +21,8 @@ fn main() -> Result<()> {
                     ..dns::Header::default()
                 };
 
-                let header_buf: [u8; 12] = header.into();
+                let response = bincode::encode_to_vec(header, bincode::config::standard())?;
 
-                let response = bincode::encode_to_vec(header_buf, bincode::config::standard())?;
                 udp_socket
                     .send_to(&response, source)
                     .expect("Failed to send response");
