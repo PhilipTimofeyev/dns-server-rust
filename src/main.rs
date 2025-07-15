@@ -1,5 +1,5 @@
 use anyhow::Result;
-use codecrafters_dns_server::dns;
+use codecrafters_dns_server::dns::{header, question, answer};
 use std::net::UdpSocket;
 
 fn main() -> Result<()> {
@@ -14,39 +14,32 @@ fn main() -> Result<()> {
                 println!("Received {size} bytes from {source}");
                 let mut offset = 0;
 
-                let flags = dns::Flags::default().with_qr_indicator(1).into();
+                let flags = header::Flags::default().with_qr_indicator(1).into();
 
-                let header = dns::Header {
+                let header = header::Header {
                     packet_identifier: 1234,
                     qd_count: 1,
+                    an_count: 1,
                     flags,
-                    ..dns::Header::default()
+                    ..header::Header::default()
                 };
 
                 let header_bytes = header.to_bytes();
-
                 offset += header_bytes.len();
                 buf[0..offset].copy_from_slice(&header_bytes);
 
-                // // buf[0..10].copy_from_slice(&header_bytes);
-                // result.extend_from_slice(&header_bytes);
+                let question = question::Question::new("codecrafters.io".to_string());
+                let question_bytes = question.to_bytes();
+                buf[offset..offset + question_bytes.len()].copy_from_slice(&question_bytes);
 
-                // let question = dns::Question::new("codecrafters.io".to_string());
+                offset += question_bytes.len();
 
-                // let questions = dns::Question {
-                //     name: "google".to_string(),
-                //     record_type: 1,
-                //     class: 1,
-                // };
-                //
-                // let length = result.len();
+                let answer = answer::Answer::new("codecrafters.io".to_string());
+                let answer_bytes = answer.to_bytes();
+                buf[offset..offset + answer_bytes.len()].copy_from_slice(&answer_bytes);
 
-                // let question_bytes = bincode::encode_to_vec(questions, bincode::config::standard())?;
-                // result[0..length].copy_from_slice(&question.to_bytes());
-                // let question_bytes = question.to_bytes();
-                // buf[offset..offset + question_bytes.len()].copy_from_slice(&question_bytes);
+                offset += answer_bytes.len();
 
-                // buf[offset..offset + question_bytes.len()].copy_from_slice(&result);
 
                 udp_socket
                     .send_to(&buf, source)
