@@ -30,6 +30,5 @@ impl Question {
         buf.extend_from_slice(&self.class.to_be_bytes());
 
         buf
-
     }
 }

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use codecrafters_dns_server::dns::{header, question, answer};
+use codecrafters_dns_server::dns::{answer, header, question};
 use std::net::UdpSocket;
 
 fn main() -> Result<()> {
@@ -14,17 +14,23 @@ fn main() -> Result<()> {
                 println!("Received {size} bytes from {source}");
                 let mut offset = 0;
 
-                let flags = header::Flags::default().with_qr_indicator(1).into();
+                //parses header and flags, returning their structs which can be modified for the
+                //response
+                let mut parsed_header = header::parse_header(&buf);
+                let mut parsed_flags = header::parse_flags(parsed_header.flags);
 
-                let header = header::Header {
-                    packet_identifier: 1234,
-                    qd_count: 1,
-                    an_count: 1,
-                    flags,
-                    ..header::Header::default()
+                parsed_flags.set_qr_indicator(1);
+
+                if parsed_flags.opcode() == 0 {
+                    parsed_flags.set_rcode(0);
+                } else {
+                    parsed_flags.set_rcode(4);
                 };
 
-                let header_bytes = header.to_bytes();
+                parsed_header.flags = parsed_flags.into();
+                parsed_header.an_count = 1;
+
+                let header_bytes = parsed_header.to_bytes();
                 offset += header_bytes.len();
                 buf[0..offset].copy_from_slice(&header_bytes);
 
@@ -39,7 +45,6 @@ fn main() -> Result<()> {
                 buf[offset..offset + answer_bytes.len()].copy_from_slice(&answer_bytes);
 
                 offset += answer_bytes.len();
-
 
                 udp_socket
                     .send_to(&buf, source)

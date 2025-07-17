@@ -4,7 +4,7 @@ pub struct Answer {
     class: u16,
     ttl: u32,
     length: u16,
-    data: u32
+    data: u32,
 }
 
 impl Answer {
@@ -17,7 +17,7 @@ impl Answer {
         }
         buf.push(0);
 
-        let data: [u8; 4] = [0x08,0x08,0x08,0x08];
+        let data: [u8; 4] = [0x08, 0x08, 0x08, 0x08];
         let length = data.len() as u16;
 
         Answer {
@@ -26,7 +26,7 @@ impl Answer {
             class: 1,
             ttl: 60,
             length,
-            data: u32::from_be_bytes(data)
+            data: u32::from_be_bytes(data),
         }
     }
 

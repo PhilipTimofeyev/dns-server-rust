@@ -56,3 +56,42 @@ impl From<Flags> for u16 {
         u16::from_le_bytes(flags.into_bytes())
     }
 }
+
+pub fn parse_header(buf: &[u8]) -> Header {
+    let packet_identifier = u16::from_be_bytes([buf[0], buf[1]]);
+    let flags = u16::from_be_bytes([buf[2], buf[3]]);
+    let qd_count = u16::from_be_bytes([buf[4], buf[5]]);
+    let an_count = u16::from_be_bytes([buf[6], buf[7]]);
+    let ns_count = u16::from_be_bytes([buf[8], buf[9]]);
+    let ar_count = u16::from_be_bytes([buf[10], buf[11]]);
+
+    Header {
+        packet_identifier,
+        flags,
+        qd_count,
+        an_count,
+        ns_count,
+        ar_count,
+    }
+}
+
+pub fn parse_flags(flags: u16) -> Flags {
+    let qr_indicator = ((flags >> 15) & 1) as u8;
+    let op_code = ((flags >> 11) & 0x0F) as u8;
+    let authoritative_answer = ((flags & 0x0400) != 0) as u8;
+    let truncation = ((flags & 0x0200) != 0) as u8;
+    let recursion_desired = (flags & 0x0100) != 0;
+    let recursion_available = ((flags & 0x0080) != 0) as u8;
+    let reserved = ((flags >> 4) & 0x07) as u8;
+    let rcode = (flags & 0x000F) as u8;
+
+    Flags::new()
+        .with_qr_indicator(qr_indicator)
+        .with_opcode(op_code)
+        .with_authoritative_answer(authoritative_answer)
+        .with_truncation(truncation)
+        .with_recursion_desired(recursion_desired as u8)
+        .with_recursion_available(recursion_available)
+        .with_reserved(reserved)
+        .with_rcode(rcode)
+}
