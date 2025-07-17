@@ -12,42 +12,36 @@ fn main() -> Result<()> {
         match udp_socket.recv_from(&mut buf) {
             Ok((size, source)) => {
                 println!("Received {size} bytes from {source}");
-                let mut offset = 0;
 
-                //parses header and flags, returning their structs which can be modified for the
-                //response
+                let mut response = Vec::<u8>::with_capacity(12);
+
                 let mut parsed_header = header::parse_header(&buf);
                 let mut parsed_flags = header::parse_flags(parsed_header.flags);
 
                 parsed_flags.set_qr_indicator(true);
 
-                if parsed_flags.opcode() == 0 {
-                    parsed_flags.set_rcode(0);
+                if parsed_flags.op_code() == 0 {
+                    parsed_flags.set_r_code(0);
                 } else {
-                    parsed_flags.set_rcode(4);
+                    parsed_flags.set_r_code(4);
                 };
 
                 parsed_header.flags = parsed_flags.into();
                 parsed_header.an_count = 1;
 
                 let header_bytes = parsed_header.to_bytes();
-                offset += header_bytes.len();
-                buf[0..offset].copy_from_slice(&header_bytes);
+                response.extend_from_slice(&header_bytes);
 
                 let question = question::Question::new("codecrafters.io".to_string());
                 let question_bytes = question.to_bytes();
-                buf[offset..offset + question_bytes.len()].copy_from_slice(&question_bytes);
-
-                offset += question_bytes.len();
+                response.extend_from_slice(&question_bytes);
 
                 let answer = answer::Answer::new("codecrafters.io".to_string());
                 let answer_bytes = answer.to_bytes();
-                buf[offset..offset + answer_bytes.len()].copy_from_slice(&answer_bytes);
-
-                offset += answer_bytes.len();
+                response.extend_from_slice(&answer_bytes);
 
                 udp_socket
-                    .send_to(&buf, source)
+                    .send_to(&response, source)
                     .expect("Failed to send response");
             }
             Err(e) => {

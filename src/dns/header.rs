@@ -35,13 +35,13 @@ impl Header {
 #[bitfield]
 #[derive(Debug)]
 pub struct Flags {
-    pub rcode: B4,
+    pub r_code: B4,
     pub reserved: B3,
     pub recursion_available: bool,
     pub recursion_desired: bool,
     pub truncation: bool,
-    pub authoritative_answer:bool,
-    pub opcode: B4,
+    pub authoritative_answer: bool,
+    pub op_code: B4,
     pub qr_indicator: bool,
 }
 
@@ -83,15 +83,15 @@ pub fn parse_flags(flags: u16) -> Flags {
     let recursion_desired = (flags & 0x0100) != 0;
     let recursion_available = (flags & 0x0080) != 0;
     let reserved = ((flags >> 4) & 0x07) as u8;
-    let rcode = (flags & 0x000F) as u8;
+    let r_code = (flags & 0x000F) as u8;
 
     Flags::new()
         .with_qr_indicator(qr_indicator)
-        .with_opcode(op_code)
+        .with_op_code(op_code)
         .with_authoritative_answer(authoritative_answer)
         .with_truncation(truncation)
         .with_recursion_desired(recursion_desired)
         .with_recursion_available(recursion_available)
         .with_reserved(reserved)
-        .with_rcode(rcode)
+        .with_r_code(r_code)
 }
