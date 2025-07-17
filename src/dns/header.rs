@@ -37,12 +37,12 @@ impl Header {
 pub struct Flags {
     pub rcode: B4,
     pub reserved: B3,
-    pub recursion_available: B1,
-    pub recursion_desired: B1,
-    pub truncation: B1,
-    pub authoritative_answer: B1,
+    pub recursion_available: bool,
+    pub recursion_desired: bool,
+    pub truncation: bool,
+    pub authoritative_answer:bool,
     pub opcode: B4,
-    pub qr_indicator: B1,
+    pub qr_indicator: bool,
 }
 
 impl Default for Flags {
@@ -76,12 +76,12 @@ pub fn parse_header(buf: &[u8]) -> Header {
 }
 
 pub fn parse_flags(flags: u16) -> Flags {
-    let qr_indicator = ((flags >> 15) & 1) as u8;
+    let qr_indicator = (flags >> 15) != 0;
     let op_code = ((flags >> 11) & 0x0F) as u8;
-    let authoritative_answer = ((flags & 0x0400) != 0) as u8;
-    let truncation = ((flags & 0x0200) != 0) as u8;
+    let authoritative_answer = (flags & 0x0400) != 0;
+    let truncation = (flags & 0x0200) != 0;
     let recursion_desired = (flags & 0x0100) != 0;
-    let recursion_available = ((flags & 0x0080) != 0) as u8;
+    let recursion_available = (flags & 0x0080) != 0;
     let reserved = ((flags >> 4) & 0x07) as u8;
     let rcode = (flags & 0x000F) as u8;
 
@@ -90,7 +90,7 @@ pub fn parse_flags(flags: u16) -> Flags {
         .with_opcode(op_code)
         .with_authoritative_answer(authoritative_answer)
         .with_truncation(truncation)
-        .with_recursion_desired(recursion_desired as u8)
+        .with_recursion_desired(recursion_desired)
         .with_recursion_available(recursion_available)
         .with_reserved(reserved)
         .with_rcode(rcode)

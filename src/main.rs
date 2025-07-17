@@ -19,7 +19,7 @@ fn main() -> Result<()> {
                 let mut parsed_header = header::parse_header(&buf);
                 let mut parsed_flags = header::parse_flags(parsed_header.flags);
 
-                parsed_flags.set_qr_indicator(1);
+                parsed_flags.set_qr_indicator(true);
 
                 if parsed_flags.opcode() == 0 {
                     parsed_flags.set_rcode(0);
