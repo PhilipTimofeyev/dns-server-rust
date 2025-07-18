@@ -1,5 +1,5 @@
 pub struct Answer {
-    name: Vec<u8>,
+    pub name: Vec<u8>,
     answer_type: u16,
     class: u16,
     ttl: u32,

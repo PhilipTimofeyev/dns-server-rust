@@ -12,6 +12,7 @@ impl Question {
         for label in a {
             buf.push(label.len() as u8);
             buf.extend_from_slice(label.as_bytes());
+            buf.push(0);
         }
 
         Question {
@@ -25,10 +26,26 @@ impl Question {
         let mut buf = Vec::new();
 
         buf.extend_from_slice(&self.name);
-        buf.push(0);
         buf.extend_from_slice(&self.record_type.to_be_bytes());
         buf.extend_from_slice(&self.class.to_be_bytes());
 
         buf
     }
 }
+
+pub fn parse(bytes: &[u8]) -> Question {
+    let domain_name_end_idx = bytes[12..].iter().position(|&byte| byte == 0).unwrap();
+    let domain_name = &bytes[12..(domain_name_end_idx + 13)];
+
+    Question {
+        name: domain_name.to_vec(),
+        record_type: 1,
+        class: 1,
+    }
+}
+
+// let a: Vec<String> = question_bytes
+//     .split(|byte| !byte.is_ascii_alphanumeric())
+//     .filter(|bytes| !bytes.is_empty())
+//     .map(|bytes| str::from_utf8(bytes).unwrap().to_string())
+//     .collect();

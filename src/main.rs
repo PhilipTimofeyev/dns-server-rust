@@ -32,11 +32,12 @@ fn main() -> Result<()> {
                 let header_bytes = parsed_header.to_bytes();
                 response.extend_from_slice(&header_bytes);
 
-                let question = question::Question::new("codecrafters.io".to_string());
-                let question_bytes = question.to_bytes();
-                response.extend_from_slice(&question_bytes);
+                let parsed_question = question::parse(&buf);
+                response.extend_from_slice(&parsed_question.to_bytes());
 
-                let answer = answer::Answer::new("codecrafters.io".to_string());
+                let mut answer = answer::Answer::new("codecrafters.io".to_string());
+                answer.name = parsed_question.name.to_vec();
+
                 let answer_bytes = answer.to_bytes();
                 response.extend_from_slice(&answer_bytes);
 
