@@ -1,3 +1,8 @@
+use std::io::Cursor;
+use std::io::{self, BufRead, BufReader, Read};
+
+use bytes::buf;
+
 #[derive(Debug, Default)]
 pub struct Question {
     pub name: Vec<u8>,
@@ -33,15 +38,55 @@ impl Question {
     }
 }
 
-pub fn parse(bytes: &[u8]) -> Question {
-    let domain_name_end_idx = bytes[12..].iter().position(|&byte| byte == 0).unwrap();
-    let domain_name = &bytes[12..(domain_name_end_idx + 13)];
+// pub fn parse(bytes: &[u8]) -> Question {
+//     let domain_name_end_idx = bytes.iter().position(|&byte| byte == 0).unwrap();
+//     let hmm = bytes.split(|&byte| byte == 0);
+//     let domain_name = &bytes[12..(domain_name_end_idx + 13)];
+//
+//     Question {
+//         name: domain_name.to_vec(),
+//         record_type: 1,
+//         class: 1,
+//     }
+// }
 
-    Question {
-        name: domain_name.to_vec(),
-        record_type: 1,
-        class: 1,
+pub fn parse(bytes: &[u8]) -> Vec<Question> {
+    // println!("Questions: {:?}", bytes);
+    let len = bytes.len();
+    let mut cursor = Cursor::new(bytes);
+    let mut buf = vec![];
+    let mut temp = [0u8; 4];
+    let mut result: Vec<Question> = Vec::new();
+
+    while cursor.position() < len as u64 {
+        cursor.read_until(0, &mut buf);
+        println!("buf: {:?}", buf);
+        cursor.read_exact(&mut temp);
+        if temp.iter().all(|n| *n == 0) {
+            break;
+        }
+
+        // buf.extend_from_slice(&temp);
+        let mut question = Question {
+            name: buf.clone(),
+            record_type: 1,
+            class: 1,
+        };
+        if buf.contains(&192) {
+            question.name = result[0].name.clone();
+        }
+        result.push(question);
+        buf.clear();
+        //     // println!("Cursor : {}",cursor.position());
+        //     // break;
     }
+
+    // println!("Result: {:?}", result);
+    // printreln!("Buf {:?}", buf);
+    // println!("{:?}", cursor);
+    // let hmm = bytes.split(|&byte| byte == 0);
+    // let domain_name = &bytes[12..(domain_name_end_idx + 13)];
+    result
 }
 
 // let a: Vec<String> = question_bytes

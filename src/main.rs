@@ -12,6 +12,8 @@ fn main() -> Result<()> {
         match udp_socket.recv_from(&mut buf) {
             Ok((size, source)) => {
                 println!("Received {size} bytes from {source}");
+                let mut offset = 12;
+                // println!("INTIAL: {}", buf.len());
 
                 let mut response = Vec::<u8>::with_capacity(12);
 
@@ -27,20 +29,35 @@ fn main() -> Result<()> {
                 };
 
                 parsed_header.flags = parsed_flags.into();
-                parsed_header.an_count = 1;
+                // parsed_header.an_count = 2;
 
+                let parsed_questions = question::parse(&buf[12..]);
+                let num_of_questions = parsed_questions.len();
+
+                parsed_header.qd_count = num_of_questions as u16;
+                parsed_header.an_count = num_of_questions as u16;
                 let header_bytes = parsed_header.to_bytes();
                 response.extend_from_slice(&header_bytes);
+                
+                println!("Header {:?}", parsed_header);
+                
 
-                let parsed_question = question::parse(&buf);
-                response.extend_from_slice(&parsed_question.to_bytes());
+                for question in parsed_questions.as_slice() {
+                    println!("Question{:?}", question.to_bytes());
+                    response.extend_from_slice(&question.to_bytes());
+                }
+                for question in parsed_questions.as_slice() {
 
-                let mut answer = answer::Answer::new("codecrafters.io".to_string());
-                answer.name = parsed_question.name.to_vec();
+                    let mut answer = answer::Answer::new(&question.name.to_vec());
+                    println!("question name {:?}", question.name);
+                    // answer.name = question.name.to_vec();
+                    // answer.data  = 0;
 
-                let answer_bytes = answer.to_bytes();
-                response.extend_from_slice(&answer_bytes);
+                    let answer_bytes = answer.to_bytes();
 
+                    response.extend_from_slice(&answer_bytes);
+                }
+                println!("FINAL: {:?}", response);
                 udp_socket
                     .send_to(&response, source)
                     .expect("Failed to send response");
