@@ -12,38 +12,38 @@ fn main() -> Result<()> {
         match udp_socket.recv_from(&mut buf) {
             Ok((size, source)) => {
                 println!("Received {size} bytes from {source}");
+
                 let mut response = Vec::<u8>::with_capacity(12);
 
+                // Parse header
                 let mut parsed_header = header::parse_header(&buf);
-                let mut parsed_flags = header::parse_flags(parsed_header.flags);
+                let mut parsed_flags = header::flags::parse(parsed_header.flags);
 
+                // Update header's flags
                 parsed_flags.set_qr_indicator(true);
-
-                if parsed_flags.op_code() == 0 {
-                    parsed_flags.set_r_code(0);
-                } else {
-                    parsed_flags.set_r_code(4);
-                };
-
                 parsed_header.flags = parsed_flags.into();
 
+                // Parse questions
                 let parsed_questions = question::parse(&buf[12..]);
                 let num_of_questions = parsed_questions.len();
 
+                // Update headers question/answer count
                 parsed_header.qd_count = num_of_questions as u16;
                 parsed_header.an_count = num_of_questions as u16;
 
+                // Build header
                 let header_bytes = parsed_header.to_bytes();
                 response.extend_from_slice(&header_bytes);
 
+                // Build questions
+                // All questions must be built first, then answers
                 for question in parsed_questions.as_slice() {
                     response.extend_from_slice(&question.to_bytes());
                 }
+                // Build answers
                 for question in parsed_questions.as_slice() {
                     let answer = answer::Answer::new(&question.name.to_vec());
-                    let answer_bytes = answer.to_bytes();
-
-                    response.extend_from_slice(&answer_bytes);
+                    response.extend_from_slice(&answer.to_bytes());
                 }
 
                 udp_socket

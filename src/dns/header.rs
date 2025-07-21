@@ -1,5 +1,3 @@
-use modular_bitfield::prelude::*;
-
 #[derive(Debug, Default)]
 pub struct Header {
     pub packet_identifier: u16,
@@ -32,31 +30,6 @@ impl Header {
     }
 }
 
-#[bitfield]
-#[derive(Debug)]
-pub struct Flags {
-    pub r_code: B4,
-    pub reserved: B3,
-    pub recursion_available: bool,
-    pub recursion_desired: bool,
-    pub truncation: bool,
-    pub authoritative_answer: bool,
-    pub op_code: B4,
-    pub qr_indicator: bool,
-}
-
-impl Default for Flags {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl From<Flags> for u16 {
-    fn from(flags: Flags) -> u16 {
-        u16::from_le_bytes(flags.into_bytes())
-    }
-}
-
 pub fn parse_header(buf: &[u8]) -> Header {
     let packet_identifier = u16::from_be_bytes([buf[0], buf[1]]);
     let flags = u16::from_be_bytes([buf[2], buf[3]]);
@@ -75,23 +48,52 @@ pub fn parse_header(buf: &[u8]) -> Header {
     }
 }
 
-pub fn parse_flags(flags: u16) -> Flags {
-    let qr_indicator = (flags >> 15) != 0;
-    let op_code = ((flags >> 11) & 0x0F) as u8;
-    let authoritative_answer = (flags & 0x0400) != 0;
-    let truncation = (flags & 0x0200) != 0;
-    let recursion_desired = (flags & 0x0100) != 0;
-    let recursion_available = (flags & 0x0080) != 0;
-    let reserved = ((flags >> 4) & 0x07) as u8;
-    let r_code = (flags & 0x000F) as u8;
+pub mod flags {
+    use modular_bitfield::prelude::*;
 
-    Flags::new()
-        .with_qr_indicator(qr_indicator)
-        .with_op_code(op_code)
-        .with_authoritative_answer(authoritative_answer)
-        .with_truncation(truncation)
-        .with_recursion_desired(recursion_desired)
-        .with_recursion_available(recursion_available)
-        .with_reserved(reserved)
-        .with_r_code(r_code)
+    #[bitfield]
+    #[derive(Debug)]
+    pub struct Flags {
+        pub r_code: B4,
+        pub reserved: B3,
+        pub recursion_available: bool,
+        pub recursion_desired: bool,
+        pub truncation: bool,
+        pub authoritative_answer: bool,
+        pub op_code: B4,
+        pub qr_indicator: bool,
+    }
+
+    impl Default for Flags {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    impl From<Flags> for u16 {
+        fn from(flags: Flags) -> u16 {
+            u16::from_le_bytes(flags.into_bytes())
+        }
+    }
+
+    pub fn parse(flags: u16) -> Flags {
+        let qr_indicator = (flags >> 15) != 0;
+        let op_code = ((flags >> 11) & 0x0F) as u8;
+        let authoritative_answer = (flags & 0x0400) != 0;
+        let truncation = (flags & 0x0200) != 0;
+        let recursion_desired = (flags & 0x0100) != 0;
+        let recursion_available = (flags & 0x0080) != 0;
+        let reserved = ((flags >> 4) & 0x07) as u8;
+        let r_code = if op_code == 0 { 0 } else { 4 };
+
+        Flags::new()
+            .with_qr_indicator(qr_indicator)
+            .with_op_code(op_code)
+            .with_authoritative_answer(authoritative_answer)
+            .with_truncation(truncation)
+            .with_recursion_desired(recursion_desired)
+            .with_recursion_available(recursion_available)
+            .with_reserved(reserved)
+            .with_r_code(r_code)
+    }
 }
