@@ -1,7 +1,5 @@
 use std::io::Cursor;
-use std::io::{self, BufRead, BufReader, Read};
-
-use bytes::buf;
+use std::io::{BufRead, Read};
 
 #[derive(Debug, Default)]
 pub struct Question {
@@ -38,20 +36,7 @@ impl Question {
     }
 }
 
-// pub fn parse(bytes: &[u8]) -> Question {
-//     let domain_name_end_idx = bytes.iter().position(|&byte| byte == 0).unwrap();
-//     let hmm = bytes.split(|&byte| byte == 0);
-//     let domain_name = &bytes[12..(domain_name_end_idx + 13)];
-//
-//     Question {
-//         name: domain_name.to_vec(),
-//         record_type: 1,
-//         class: 1,
-//     }
-// }
-
 pub fn parse(bytes: &[u8]) -> Vec<Question> {
-    // println!("Questions: {:?}", bytes);
     let len = bytes.len();
     let mut cursor = Cursor::new(bytes);
     let mut buf = vec![];
@@ -59,38 +44,34 @@ pub fn parse(bytes: &[u8]) -> Vec<Question> {
     let mut result: Vec<Question> = Vec::new();
 
     while cursor.position() < len as u64 {
-        cursor.read_until(0, &mut buf);
-        println!("buf: {:?}", buf);
-        cursor.read_exact(&mut temp);
+        // read until null byte after domain name
+        let _ = cursor.read_until(0, &mut buf);
+        // read the four bytes of type and class
+        let _ = cursor.read_exact(&mut temp);
+
+        // if bytes are null then reached end of message
         if temp.iter().all(|n| *n == 0) {
             break;
         }
 
-        // buf.extend_from_slice(&temp);
         let mut question = Question {
             name: buf.clone(),
             record_type: 1,
             class: 1,
         };
-        if buf.contains(&192) {
-            question.name = result[0].name.clone();
+
+        // If question has compressed label sequence, use label sequence of previous question
+        if buf.contains(&0xc0) {
+            let last_question = result
+                .iter()
+                .rfind(|question| !question.name.contains(&0xc0))
+                .unwrap();
+            question.name = last_question.name.clone();
         }
+
         result.push(question);
         buf.clear();
-        //     // println!("Cursor : {}",cursor.position());
-        //     // break;
     }
 
-    // println!("Result: {:?}", result);
-    // printreln!("Buf {:?}", buf);
-    // println!("{:?}", cursor);
-    // let hmm = bytes.split(|&byte| byte == 0);
-    // let domain_name = &bytes[12..(domain_name_end_idx + 13)];
     result
 }
-
-// let a: Vec<String> = question_bytes
-//     .split(|byte| !byte.is_ascii_alphanumeric())
-//     .filter(|bytes| !bytes.is_empty())
-//     .map(|bytes| str::from_utf8(bytes).unwrap().to_string())
-//     .collect();
