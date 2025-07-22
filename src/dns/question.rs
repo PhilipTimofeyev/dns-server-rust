@@ -9,21 +9,21 @@ pub struct Question {
 }
 
 impl Question {
-    pub fn new(domain: String) -> Self {
-        let mut buf = Vec::new();
-        let a = domain.split('.');
-        for label in a {
-            buf.push(label.len() as u8);
-            buf.extend_from_slice(label.as_bytes());
-            buf.push(0);
-        }
-
-        Question {
-            name: buf,
-            record_type: 1,
-            class: 1,
-        }
-    }
+    // pub fn new(domain: String) -> Self {
+    //     let mut buf = Vec::new();
+    //     let a = domain.split('.');
+    //     for label in a {
+    //         buf.push(label.len() as u8);
+    //         buf.extend_from_slice(label.as_bytes());
+    //         buf.push(0);
+    //     }
+    //
+    //     Question {
+    //         name: buf,
+    //         record_type: 1,
+    //         class: 1,
+    //     }
+    // }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();

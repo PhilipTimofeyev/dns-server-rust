@@ -16,8 +16,8 @@ fn main() -> Result<()> {
                 let mut response = Vec::<u8>::with_capacity(12);
 
                 // Parse header
-                let mut parsed_header = header::parse_header(&buf);
-                let mut parsed_flags = header::flags::parse(parsed_header.flags);
+                let mut parsed_header = header::from_bytes(buf[0..12].try_into()?);
+                let mut parsed_flags = header::flags::from_bytes(parsed_header.flags);
 
                 // Update header's flags
                 parsed_flags.set_qr_indicator(true);

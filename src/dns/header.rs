@@ -30,7 +30,7 @@ impl Header {
     }
 }
 
-pub fn parse_header(buf: &[u8]) -> Header {
+pub fn from_bytes(buf: [u8; 12]) -> Header {
     let packet_identifier = u16::from_be_bytes([buf[0], buf[1]]);
     let flags = u16::from_be_bytes([buf[2], buf[3]]);
     let qd_count = u16::from_be_bytes([buf[4], buf[5]]);
@@ -47,7 +47,6 @@ pub fn parse_header(buf: &[u8]) -> Header {
         ar_count,
     }
 }
-
 pub mod flags {
     use modular_bitfield::prelude::*;
 
@@ -76,7 +75,7 @@ pub mod flags {
         }
     }
 
-    pub fn parse(flags: u16) -> Flags {
+    pub fn from_bytes(flags: u16) -> Flags {
         let qr_indicator = (flags >> 15) != 0;
         let op_code = ((flags >> 11) & 0x0F) as u8;
         let authoritative_answer = (flags & 0x0400) != 0;
