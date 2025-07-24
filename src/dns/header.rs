@@ -1,4 +1,4 @@
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Header {
     pub packet_identifier: u16,
     pub flags: u16,
@@ -12,19 +12,12 @@ impl Header {
     pub fn to_bytes(&self) -> [u8; 12] {
         let mut buf = [0; 12];
 
-        //Extract high and low byte
-        buf[0] = (self.packet_identifier >> 8) as u8;
-        buf[1] = (self.packet_identifier & 0xFF) as u8;
-        buf[2] = (self.flags >> 8) as u8;
-        buf[3] = (self.flags & 0xFF) as u8;
-        buf[4] = (self.qd_count >> 8) as u8;
-        buf[5] = (self.qd_count & 0xFF) as u8;
-        buf[6] = (self.an_count >> 8) as u8;
-        buf[7] = (self.an_count & 0xFF) as u8;
-        buf[8] = (self.ns_count >> 8) as u8;
-        buf[9] = (self.ns_count & 0xFF) as u8;
-        buf[10] = (self.ar_count >> 8) as u8;
-        buf[11] = (self.ar_count & 0xFF) as u8;
+        buf[0..2].copy_from_slice(&self.packet_identifier.to_be_bytes());
+        buf[2..4].copy_from_slice(&self.flags.to_be_bytes());
+        buf[4..6].copy_from_slice(&self.qd_count.to_be_bytes());
+        buf[6..8].copy_from_slice(&self.an_count.to_be_bytes());
+        buf[8..10].copy_from_slice(&self.ns_count.to_be_bytes());
+        buf[10..12].copy_from_slice(&self.ar_count.to_be_bytes());
 
         buf
     }
