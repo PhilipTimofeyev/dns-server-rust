@@ -10,7 +10,7 @@ fn main() -> Result<()> {
     args.next();
 
     let address = if let Some(resolver) = args.next() {
-        if resolver == String::from("--resolver") {
+        if resolver == "--resolver" {
             let address = args.next().unwrap();
             // let address: SocketAddr = address.parse().unwrap();
             Some(address)
@@ -48,31 +48,8 @@ fn main() -> Result<()> {
                 let num_of_questions = parsed_questions.len();
 
                 // Build header
-                let header_bytes = parsed_header.to_bytes();
+                // let header_bytes = parsed_header.to_bytes();
                 // response.extend_from_slice(&header_bytes);
-
-                for question in parsed_questions.as_slice() {
-                    let packet = dns::DnsPacket {
-                        header: parsed_header.clone(),
-                        questions: vec![question.clone()],
-                        answers: None,
-                    };
-                    // println!("{:?}", packet.to_bytes());
-                    // udp_socket.set_read_timeout(Some(Duration::from_secs(2)))?;
-
-                    let sent = udp_socket.send_to(&packet.to_bytes(), address.clone().unwrap());
-                    let mut hmm = [0u8; 512];
-                    udp_socket.recv(&mut hmm)?;
-                    // println!("Sent: {:?}", sent);
-                    if hmm[13] == 0 {
-                        break
-                    }
-                    let answer = answer::parse(&hmm[12..]);
-                    // udp_socket.recv(&mut hmm);
-                    // println!("Hmm {:?}", hmm);
-                    answers.push(answer.clone());
-                    // println!("Answer {:?}", answer);
-                }
 
                 // Build questions
                 // All questions must be built first, then answers
@@ -90,6 +67,24 @@ fn main() -> Result<()> {
                 //     .iter()
                 //     .map(|question| answer::Answer::new(&question.name, ip_address))
                 //     .collect();
+
+                let mut answers =
+                    forward(
+                        parsed_header.clone(),
+                        parsed_questions.clone(),
+                        address.clone(),
+                        &udp_socket,
+                    )?;
+                
+
+                if answers.is_empty() {
+                    answers = parsed_questions
+                        .iter()
+                        .map(|question| answer::Answer::new(&question.name))
+                        .collect()
+                }
+
+                println!("ANSWERS{:?}", answers);
 
                 // Update headers question/answer count
                 parsed_header.qd_count = num_of_questions as u16;
@@ -121,4 +116,37 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn forward(
+    header: header::Header,
+    questions: Vec<question::Question>,
+    address: Option<String>,
+    udp_socket: &UdpSocket,
+) -> Result<Vec<answer::Answer>> {
+    let mut answers = Vec::<answer::Answer>::new();
+    for question in questions {
+        let packet = dns::DnsPacket {
+            header: header.clone(),
+            questions: vec![question.clone()],
+            answers: None,
+        };
+        // println!("{:?}", packet.to_bytes());
+        // udp_socket.set_read_timeout(Some(Duration::from_secs(2)))?;
+
+        let sent = udp_socket.send_to(&packet.to_bytes(), address.clone().unwrap());
+        let mut hmm = [0u8; 512];
+        udp_socket.recv(&mut hmm)?;
+        // println!("Sent: {:?}", sent);
+        if hmm[13] == 0 {
+            break;
+        }
+        let answer = answer::parse(&hmm[12..]);
+        // udp_socket.recv(&mut hmm);
+        // println!("Hmm {:?}", hmm);
+        answers.push(answer.clone());
+        // println!("Answer {:?}", answer);
+    }
+
+    Ok(answers)
 }

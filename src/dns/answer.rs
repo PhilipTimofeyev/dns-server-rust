@@ -13,7 +13,7 @@ pub struct Answer {
 }
 
 impl Answer {
-    pub fn new(buf: &[u8], data: Ipv4Addr) -> Self {
+    pub fn new(buf: &[u8]) -> Self {
         // let mut buf = Vec::new();
         // let a = domain.split('.');
         // for label in a {
@@ -31,7 +31,7 @@ impl Answer {
             class: 1,
             ttl: 60,
             length: 4,
-            data: data.into(),
+            data: 0,
         }
     }
 
@@ -76,55 +76,55 @@ pub fn parse(bytes: &[u8]) -> Answer {
     // let mut result: Vec<Question> = Vec::new();
 
     // while cursor.position() < len as u64 {
-        // read until null byte after domain name
-        let _ = cursor.skip_until(0);
-        let _ = cursor.read_exact(&mut hmm);
-        // read the four bytes of type and class
-        let _ = cursor.read_until(0, &mut name);
-        let _ = cursor.read_exact(&mut answer_type);
-        let _ = cursor.read_exact(&mut class);
-        let _ = cursor.read_exact(&mut ttl);
-        let _ = cursor.read_exact(&mut length);
+    // read until null byte after domain name
+    let _ = cursor.skip_until(0);
+    let _ = cursor.read_exact(&mut hmm);
+    // read the four bytes of type and class
+    let _ = cursor.read_until(0, &mut name);
+    let _ = cursor.read_exact(&mut answer_type);
+    let _ = cursor.read_exact(&mut class);
+    let _ = cursor.read_exact(&mut ttl);
+    let _ = cursor.read_exact(&mut length);
 
-        // println!("Cursor position {:?}", cursor.position());
+    // println!("Cursor position {:?}", cursor.position());
 
-        // if bytes are null then reached end of message
-        // if temp.iter().all(|n| *n == 0) {
-        //     break;
-        // }
+    // if bytes are null then reached end of message
+    // if temp.iter().all(|n| *n == 0) {
+    //     break;
+    // }
 
-        // let mut answer = Answer {
-        //     name: buf.clone(),
-        //     record_type: 1,
-        //     class: 1,
-        // };
+    // let mut answer = Answer {
+    //     name: buf.clone(),
+    //     record_type: 1,
+    //     class: 1,
+    // };
 
-        // If question has compressed label sequence, use label sequence of previous question
-        // if buf.contains(&0xc0) {
-        //     let last_question = result
-        //         .iter()
-        //         .rfind(|question| !question.name.contains(&0xc0))
-        //         .unwrap();
-        //     question.name = last_question.name.clone();
-        // }
+    // If question has compressed label sequence, use label sequence of previous question
+    // if buf.contains(&0xc0) {
+    //     let last_question = result
+    //         .iter()
+    //         .rfind(|question| !question.name.contains(&0xc0))
+    //         .unwrap();
+    //     question.name = last_question.name.clone();
+    // }
 
-        let end_of_bytes = bytes.iter().rposition(|&b| b != 0).unwrap();
-        println!("{end_of_bytes}");
+    let end_of_bytes = bytes.iter().rposition(|&b| b != 0).unwrap();
+    println!("{end_of_bytes}");
 
-        let data = &bytes[cursor.position() as usize..=end_of_bytes];
-        // println!("DATA {:?}", data);
+    let data = &bytes[cursor.position() as usize..=end_of_bytes];
+    // println!("DATA {:?}", data);
 
-        Answer {
-            name,
-            answer_type: u16::from_be_bytes(answer_type),
-            class: u16::from_be_bytes(class),
-            ttl: u32::from_be_bytes(ttl),
-            length: u16::from_be_bytes(length),
-            data: u32::from_be_bytes(data.try_into().expect("slice must be 4 bytes"))
-        }
+    Answer {
+        name,
+        answer_type: u16::from_be_bytes(answer_type),
+        class: u16::from_be_bytes(class),
+        ttl: u32::from_be_bytes(ttl),
+        length: u16::from_be_bytes(length),
+        data: u32::from_be_bytes(data.try_into().expect("slice must be 4 bytes")),
+    }
 
-        // buf.extend_from_slice(&bytes[cursor.position() as usize..=end_of_bytes]);
-        // buf.clear();
+    // buf.extend_from_slice(&bytes[cursor.position() as usize..=end_of_bytes]);
+    // buf.clear();
     // }
     // buf
 }
