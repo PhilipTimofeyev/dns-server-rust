@@ -27,7 +27,7 @@ fn main() -> Result<()> {
                 let mut flags = header::flags::from_bytes(&header.flags);
 
                 // Parse questions
-                let questions = question::parse(&buf[12..]);
+                let questions = question::parse(&buf[12..size]);
 
                 // Build packets
                 let mut packets = Vec::new();
@@ -85,7 +85,6 @@ fn forward(
     let mut answers = Vec::<answer::Answer>::new();
     for packet in packets {
         let mut socket_buf = [0u8; 512];
-        println!("{packet:?}");
 
         let _ = udp_socket.send_to(&packet.to_bytes(), resolver_address.unwrap());
 
@@ -95,7 +94,7 @@ fn forward(
             break;
         }
 
-        let answer = answer::parse(&socket_buf[12..]);
+        let answer = answer::parse(&socket_buf[12..size]);
         answers.push(answer);
     }
 

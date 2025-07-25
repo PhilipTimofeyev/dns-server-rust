@@ -49,11 +49,6 @@ pub fn parse(bytes: &[u8]) -> Vec<Question> {
         // read the four bytes of type and class
         let _ = cursor.read_exact(&mut temp);
 
-        // if bytes are null then reached end of message
-        if temp.iter().all(|n| *n == 0) {
-            break;
-        }
-
         let mut question = Question {
             name: buf.clone(),
             record_type: 1,

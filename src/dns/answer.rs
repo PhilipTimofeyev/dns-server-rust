@@ -52,24 +52,22 @@ impl Default for Answer {
 
 pub fn parse(bytes: &[u8]) -> Answer {
     let mut cursor = Cursor::new(bytes);
-    let mut hmm = [0u8; 4];
-    let mut name = vec![];
+    let mut temp = [0u8; 4];
+    let mut name = Vec::new();
     let mut answer_type = [0u8; 2];
     let mut class = [0u8; 2];
     let mut ttl = [0u8; 4];
     let mut length = [0u8; 2];
 
     let _ = cursor.skip_until(0);
-    let _ = cursor.read_exact(&mut hmm);
+    let _ = cursor.read_exact(&mut temp);
     let _ = cursor.read_until(0, &mut name);
     let _ = cursor.read_exact(&mut answer_type);
     let _ = cursor.read_exact(&mut class);
     let _ = cursor.read_exact(&mut ttl);
     let _ = cursor.read_exact(&mut length);
 
-    let end_of_bytes = bytes.iter().rposition(|&b| b != 0).unwrap();
-
-    let data = &bytes[cursor.position() as usize..=end_of_bytes];
+    let data = &bytes[cursor.position() as usize..];
 
     Answer {
         name,
