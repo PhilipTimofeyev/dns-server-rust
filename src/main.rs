@@ -4,11 +4,9 @@ use std::env::{self};
 use std::net::UdpSocket;
 
 fn main() -> Result<()> {
-    println!("Logs from your program will appear here!");
-
     let mut args = env::args().skip(1);
 
-    let address = args.next().and_then(|arg| {
+    let resolver_address = args.next().and_then(|arg| {
         if arg == "--resolver" {
             args.next()
         } else {
@@ -34,11 +32,12 @@ fn main() -> Result<()> {
                 // Build packets
                 let mut packets = Vec::new();
                 for question in questions.as_slice() {
-                    let packet = dns::Packet::new(header.clone(), question.clone(), None);
+                    let header = header.clone();
+                    let packet = dns::Packet::new(header, question.clone(), None);
                     packets.push(packet);
                 }
 
-                let mut answers = forward(packets, address.as_ref(), &udp_socket)?;
+                let mut answers = forward(packets, resolver_address.as_ref(), &udp_socket)?;
 
                 if answers.is_empty() {
                     answers = questions
@@ -80,17 +79,19 @@ fn main() -> Result<()> {
 
 fn forward(
     packets: Vec<dns::Packet>,
-    address: Option<&String>,
+    resolver_address: Option<&String>,
     udp_socket: &UdpSocket,
 ) -> Result<Vec<answer::Answer>> {
     let mut answers = Vec::<answer::Answer>::new();
     for packet in packets {
         let mut socket_buf = [0u8; 512];
+        println!("{packet:?}");
 
-        let _ = udp_socket.send_to(&packet.to_bytes(), address.unwrap());
-        udp_socket.recv(&mut socket_buf)?;
+        let _ = udp_socket.send_to(&packet.to_bytes(), resolver_address.unwrap());
 
-        if socket_buf[13] == 0 {
+        // If resolver only sends header break
+        let size =  udp_socket.recv(&mut socket_buf)?;
+        if size <= 12 {
             break;
         }
 
