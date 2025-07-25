@@ -3,7 +3,7 @@ use anyhow::Result;
 use std::env::{self};
 use std::net::UdpSocket;
 
-pub fn run() -> Result<()> {
+pub fn run_server() -> Result<()> {
     let mut args = env::args().skip(1);
 
     let resolver_address = args.next().and_then(|arg| {
@@ -14,6 +14,7 @@ pub fn run() -> Result<()> {
         }
     });
 
+    println!("Server running:");
     let udp_socket = UdpSocket::bind("127.0.0.1:2053").expect("Failed to bind to address");
     let mut buf = [0; 512];
 
@@ -70,18 +71,20 @@ fn forward(
 ) -> Result<()> {
     for packet in packets.iter_mut() {
         let mut resolver_buf = [0u8; 512];
+        let mut size = 0;
 
-        let _ = udp_socket.send_to(&packet.to_bytes(), resolver_address.unwrap());
-
-        let size = udp_socket.recv(&mut resolver_buf)?;
+        if resolver_address.is_some() {
+            let _ = udp_socket.send_to(&packet.to_bytes(), resolver_address.unwrap());
+            size = udp_socket.recv(&mut resolver_buf)?;
+        }
 
         // If resolver only sends header, build answers
-        if size <= 12 {
+        packet.answer = if size <= 12 {
             let answer = dns::answer::Answer::new(&packet.question.name);
-            packet.answer = Some(answer.clone());
+            Some(answer)
         } else {
             let answer = dns::answer::parse(&resolver_buf[12..size]);
-            packet.answer = Some(answer.clone());
+            Some(answer)
         }
     }
 

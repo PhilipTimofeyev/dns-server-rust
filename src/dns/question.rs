@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use std::io::{BufRead, Read};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Question {
     pub name: Vec<u8>,
     pub record_type: u16,
