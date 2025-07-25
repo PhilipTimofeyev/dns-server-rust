@@ -77,5 +77,4 @@ pub fn parse(bytes: &[u8]) -> Answer {
         length: u16::from_be_bytes(length),
         data: u32::from_be_bytes(data.try_into().expect("slice must be 4 bytes")),
     }
-
 }

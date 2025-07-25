@@ -9,22 +9,6 @@ pub struct Question {
 }
 
 impl Question {
-    // pub fn new(domain: String) -> Self {
-    //     let mut buf = Vec::new();
-    //     let a = domain.split('.');
-    //     for label in a {
-    //         buf.push(label.len() as u8);
-    //         buf.extend_from_slice(label.as_bytes());
-    //         buf.push(0);
-    //     }
-    //
-    //     Question {
-    //         name: buf,
-    //         record_type: 1,
-    //         class: 1,
-    //     }
-    // }
-
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
 
@@ -39,11 +23,12 @@ impl Question {
 pub fn parse(bytes: &[u8]) -> Vec<Question> {
     let len = bytes.len();
     let mut cursor = Cursor::new(bytes);
-    let mut buf = vec![];
     let mut temp = [0u8; 4];
     let mut result: Vec<Question> = Vec::new();
 
     while cursor.position() < len as u64 {
+        let mut buf = vec![];
+
         // read until null byte after domain name
         let _ = cursor.read_until(0, &mut buf);
         // read the four bytes of type and class
@@ -59,13 +44,12 @@ pub fn parse(bytes: &[u8]) -> Vec<Question> {
         if buf.contains(&0xc0) {
             let last_question = result
                 .iter()
-                .rfind(|question| !question.name.contains(&0xc0))
+                .find(|question| !question.name.contains(&0xc0))
                 .unwrap();
             question.name = last_question.name.clone();
         }
 
         result.push(question);
-        buf.clear();
     }
 
     result

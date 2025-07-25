@@ -61,4 +61,22 @@ impl Response {
 
         bytes
     }
+
+    pub fn new(header: header::Header, packets: Vec<Packet>) -> Self {
+        let mut questions = Vec::new();
+        let mut answers = Vec::new();
+
+        for packet in packets {
+            questions.push(packet.question);
+            if let Some(answer) = packet.answer {
+                answers.push(answer);
+            }
+        }
+
+        Response {
+            header,
+            questions,
+            answers: Some(answers),
+        }
+    }
 }

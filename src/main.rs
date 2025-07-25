@@ -37,31 +37,17 @@ fn main() -> Result<()> {
                     packets.push(packet);
                 }
 
-                let mut answers = forward(packets, resolver_address.as_ref(), &udp_socket)?;
-
-                if answers.is_empty() {
-                    answers = questions
-                        .iter()
-                        .map(|question| answer::Answer::new(&question.name))
-                        .collect()
-                }
-
                 // Update header's question/answer count
-                let num_of_questions = questions.len();
-                let num_of_answers = answers.len();
+                header.qd_count = packets.len() as u16;
+                header.an_count = packets.len() as u16;
 
-                header.qd_count = num_of_questions as u16;
-                header.an_count = num_of_answers as u16;
+                forward(&mut packets, resolver_address.as_ref(), &udp_socket)?;
 
-                // Change header to response from query
+                // Update header to response from query
                 flags.set_qr_indicator(true);
                 header.flags = flags.into();
 
-                let response = dns::Response {
-                    header,
-                    questions,
-                    answers: Some(answers),
-                };
+                let response = dns::Response::new(header, packets);
 
                 udp_socket
                     .send_to(&response.to_bytes(), source)
@@ -78,25 +64,26 @@ fn main() -> Result<()> {
 }
 
 fn forward(
-    packets: Vec<dns::Packet>,
+    packets: &mut [dns::Packet],
     resolver_address: Option<&String>,
     udp_socket: &UdpSocket,
-) -> Result<Vec<answer::Answer>> {
-    let mut answers = Vec::<answer::Answer>::new();
-    for packet in packets {
-        let mut socket_buf = [0u8; 512];
+) -> Result<()> {
+    for packet in packets.iter_mut() {
+        let mut resolver_buf = [0u8; 512];
 
         let _ = udp_socket.send_to(&packet.to_bytes(), resolver_address.unwrap());
 
-        // If resolver only sends header break
-        let size =  udp_socket.recv(&mut socket_buf)?;
-        if size <= 12 {
-            break;
-        }
+        let size = udp_socket.recv(&mut resolver_buf)?;
 
-        let answer = answer::parse(&socket_buf[12..size]);
-        answers.push(answer);
+        // If resolver only sends header, build answers
+        if size <= 12 {
+            let answer = answer::Answer::new(&packet.question.name);
+            packet.answer = Some(answer.clone());
+        } else {
+            let answer = answer::parse(&resolver_buf[12..size]);
+            packet.answer = Some(answer.clone());
+        }
     }
 
-    Ok(answers)
+    Ok(())
 }
