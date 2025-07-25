@@ -68,7 +68,7 @@ pub mod flags {
         }
     }
 
-    pub fn from_bytes(flags: u16) -> Flags {
+    pub fn from_bytes(flags: &u16) -> Flags {
         let qr_indicator = (flags >> 15) != 0;
         let op_code = ((flags >> 11) & 0x0F) as u8;
         let authoritative_answer = (flags & 0x0400) != 0;
