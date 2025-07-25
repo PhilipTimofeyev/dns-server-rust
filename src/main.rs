@@ -33,7 +33,7 @@ fn main() -> Result<()> {
                 let mut packets = Vec::new();
                 for question in questions.as_slice() {
                     let header = header.clone();
-                    let packet = dns::Packet::new(header, question.clone(), None);
+                    let packet = dns::Packet::new(header, question, None);
                     packets.push(packet);
                 }
 
@@ -47,7 +47,7 @@ fn main() -> Result<()> {
                 flags.set_qr_indicator(true);
                 header.flags = flags.into();
 
-                let response = dns::Response::new(header, packets);
+                let response = dns::Response::new(header, &packets);
 
                 udp_socket
                     .send_to(&response.to_bytes(), source)
@@ -87,3 +87,4 @@ fn forward(
 
     Ok(())
 }
+

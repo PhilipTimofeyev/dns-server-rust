@@ -3,16 +3,16 @@ pub mod header;
 pub mod question;
 
 #[derive(Debug)]
-pub struct Packet {
+pub struct Packet <'a> {
     pub header: header::Header,
-    pub question: question::Question,
+    pub question: &'a question::Question,
     pub answer: Option<answer::Answer>,
 }
 
-impl Packet {
+impl <'a> Packet <'a> {
     pub fn new(
         header: header::Header,
-        question: question::Question,
+        question: &'a question::Question,
         answer: Option<answer::Answer>,
     ) -> Self {
         Packet {
@@ -37,13 +37,13 @@ impl Packet {
 }
 
 #[derive(Debug)]
-pub struct Response {
+pub struct Response <'a> {
     pub header: header::Header,
-    pub questions: Vec<question::Question>,
+    pub questions: Vec<&'a question::Question>,
     pub answers: Option<Vec<answer::Answer>>,
 }
 
-impl Response {
+impl <'a> Response <'a> {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
@@ -62,14 +62,14 @@ impl Response {
         bytes
     }
 
-    pub fn new(header: header::Header, packets: Vec<Packet>) -> Self {
+    pub fn new(header: header::Header, packets: &'a Vec<Packet>) -> Self {
         let mut questions = Vec::new();
         let mut answers = Vec::new();
 
         for packet in packets {
             questions.push(packet.question);
-            if let Some(answer) = packet.answer {
-                answers.push(answer);
+            if let Some(answer) = &packet.answer {
+                answers.push(answer.clone());
             }
         }
 
