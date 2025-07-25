@@ -3,13 +3,13 @@ pub mod header;
 pub mod question;
 
 #[derive(Debug)]
-pub struct Packet <'a> {
+pub struct Packet<'a> {
     pub header: header::Header,
     pub question: &'a question::Question,
     pub answer: Option<answer::Answer>,
 }
 
-impl <'a> Packet <'a> {
+impl<'a> Packet<'a> {
     pub fn new(
         header: header::Header,
         question: &'a question::Question,
@@ -37,13 +37,13 @@ impl <'a> Packet <'a> {
 }
 
 #[derive(Debug)]
-pub struct Response <'a> {
+pub struct Response<'a> {
     pub header: header::Header,
     pub questions: Vec<&'a question::Question>,
     pub answers: Option<Vec<&'a answer::Answer>>,
 }
 
-impl <'a> Response <'a> {
+impl<'a> Response<'a> {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
