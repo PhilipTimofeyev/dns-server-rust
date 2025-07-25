@@ -40,7 +40,7 @@ impl <'a> Packet <'a> {
 pub struct Response <'a> {
     pub header: header::Header,
     pub questions: Vec<&'a question::Question>,
-    pub answers: Option<Vec<answer::Answer>>,
+    pub answers: Option<Vec<&'a answer::Answer>>,
 }
 
 impl <'a> Response <'a> {
@@ -69,7 +69,7 @@ impl <'a> Response <'a> {
         for packet in packets {
             questions.push(packet.question);
             if let Some(answer) = &packet.answer {
-                answers.push(answer.clone());
+                answers.push(answer);
             }
         }
 

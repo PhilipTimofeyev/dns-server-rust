@@ -35,16 +35,16 @@ pub fn parse(bytes: &[u8]) -> Vec<Question> {
         let _ = cursor.read_exact(&mut temp);
 
         let mut question = Question {
-            name: buf.clone(),
+            name: std::mem::take(&mut buf),
             record_type: 1,
             class: 1,
         };
 
         // If question has compressed label sequence, use label sequence of previous question
-        if buf.contains(&0xc0) {
+        if question.name.contains(&0xc0) {
             let last_question = result
                 .iter()
-                .find(|question| !question.name.contains(&0xc0))
+                .rfind(|question| !question.name.contains(&0xc0))
                 .unwrap();
             question.name = last_question.name.clone();
         }
