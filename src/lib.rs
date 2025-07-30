@@ -25,7 +25,7 @@ pub fn run_server() -> Result<()> {
 
                 // Parse header/flags
                 let mut header = dns::header::from_bytes(buf[0..12].try_into()?);
-                let mut flags = dns::header::flags::from_bytes(&header.flags);
+                let mut flags = dns::header::flags::from_bytes(header.flags);
 
                 // Parse questions
                 let questions = dns::question::parse(&buf[12..size]);
@@ -42,13 +42,15 @@ pub fn run_server() -> Result<()> {
                 header.qd_count = packets.len() as u16;
                 header.an_count = packets.len() as u16;
 
-                forward(&mut packets, resolver_address.as_ref(), &udp_socket)?;
+                forward_to_resolver(&mut packets, resolver_address.as_ref(), &udp_socket)?;
 
                 // Update header to response from query
                 flags.set_qr_indicator(true);
                 header.flags = flags.into();
 
                 let response = dns::Response::new(header, &packets);
+
+                println!("RESPONSE {:?}", response.to_bytes());
 
                 udp_socket
                     .send_to(&response.to_bytes(), source)
@@ -64,28 +66,33 @@ pub fn run_server() -> Result<()> {
     Ok(())
 }
 
-fn forward(
+fn forward_to_resolver(
     packets: &mut [dns::Packet],
     resolver_address: Option<&String>,
     udp_socket: &UdpSocket,
 ) -> Result<()> {
+    let hmm = UdpSocket::bind("0.0.0.0:0").expect("Failed to bind to address");
     for packet in packets.iter_mut() {
         let mut resolver_buf = [0u8; 512];
         let mut size = 0;
 
-        if resolver_address.is_some() {
-            let _ = udp_socket.send_to(&packet.to_bytes(), resolver_address.unwrap());
-            size = udp_socket.recv(&mut resolver_buf)?;
+        println!("{:?}", packet.to_bytes());
+
+        if let Some(resolver_address) = resolver_address {
+            let _ = hmm.send_to(&packet.to_bytes(), resolver_address);
+            size = hmm.recv(&mut resolver_buf)?;
         }
 
-        // If resolver only sends header, build answers
-        packet.answer = if size <= 12 {
-            let answer = dns::answer::Answer::new(&packet.question.name);
-            Some(answer)
+        println!("{:?}", resolver_buf);
+
+        // If resolver only sends header, build default answer with 0.0.0.0 address
+        let answer = if size <= 12 {
+            dns::answer::Answer::new(&packet.question.name)
         } else {
-            let answer = dns::answer::parse(&resolver_buf[12..size]);
-            Some(answer)
-        }
+            dns::answer::parse(&resolver_buf[..size])
+        };
+
+        packet.answer = Some(answer);
     }
 
     Ok(())
