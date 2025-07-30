@@ -8,7 +8,7 @@ pub struct Answer {
     class: u16,
     ttl: u32,
     length: u16,
-    pub data: u32,
+    pub data: Vec<u8>,
 }
 
 impl Answer {
@@ -19,7 +19,7 @@ impl Answer {
             class: 1,
             ttl: 60,
             length: 4,
-            data: 0,
+            data: 0_u32.to_be_bytes().to_vec(),
         }
     }
 
@@ -31,7 +31,7 @@ impl Answer {
         buf.extend_from_slice(&self.class.to_be_bytes());
         buf.extend_from_slice(&self.ttl.to_be_bytes());
         buf.extend_from_slice(&self.length.to_be_bytes());
-        buf.extend_from_slice(&self.data.to_be_bytes());
+        buf.extend_from_slice(&self.data);
 
         buf
     }
@@ -45,7 +45,7 @@ impl Default for Answer {
             class: 1,
             ttl: 60,
             length: 0,
-            data: 0,
+            data: 0_u32.to_be_bytes().to_vec(),
         }
     }
 }
@@ -85,7 +85,10 @@ pub fn parse(bytes: &[u8]) -> Answer {
     let _ = cursor.read_exact(&mut length);
     println!("Length {:?}", length);
 
-    let data = &bytes[cursor.position() as usize..];
+    let i_length = u16::from_be_bytes(length) as usize;
+    println!("{:?}", i_length);
+
+    let data = &bytes[cursor.position() as usize..cursor.position() as usize + i_length];
 
     // println!("bytes {:?}", bytes);
     println!("DATA {:?}", data);
@@ -96,6 +99,7 @@ pub fn parse(bytes: &[u8]) -> Answer {
         class: u16::from_be_bytes(class),
         ttl: u32::from_be_bytes(ttl),
         length: u16::from_be_bytes(length),
-        data: u32::from_be_bytes(data.try_into().expect("Address must be 4 bytes")),
+        // data: u32::from_be_bytes(data.try_into().expect("Address must be 4 bytes")),
+        data: data.to_vec(),
     }
 }
