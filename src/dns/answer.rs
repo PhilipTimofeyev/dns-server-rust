@@ -50,56 +50,54 @@ impl Default for Answer {
     }
 }
 
-pub fn parse(bytes: &[u8]) -> Answer {
+pub fn parse(bytes: &[u8]) -> Vec<Answer> {
+    let bytes_len = bytes.len() as u64;
     let mut cursor = Cursor::new(bytes);
+
+    let mut answers: Vec<Answer> = Vec::new();
+
     let mut header = [0u8; 12];
     let mut temp = [0u8; 4];
-    let mut name = Vec::new();
-    let mut compressed = [0u8; 2];
-    let mut answer_type = [0u8; 2];
-    let mut class = [0u8; 2];
-    let mut ttl = [0u8; 4];
-    let mut length = [0u8; 2];
-
-    println!("Bytes {:?}", bytes);
     let _ = cursor.read_exact(&mut header);
-    println!("Header {:?}", header);
     let _ = cursor.skip_until(0);
     let _ = cursor.read_exact(&mut temp);
-    println!("Temp {:?}", temp);
-    // println!("temp {:?}", cursor.position());
-    let _ = cursor.read_until(0, &mut name);
-    if name.contains(&0xc0) {
-        cursor.seek_relative(-3);
-        let _ = cursor.read_exact(&mut compressed);
-        name = compressed.to_vec();
+
+    while cursor.position() < bytes_len {
+        let mut name = Vec::new();
+        let mut compressed = [0u8; 2];
+        let mut answer_type = [0u8; 2];
+        let mut class = [0u8; 2];
+        let mut ttl = [0u8; 4];
+        let mut length = [0u8; 2];
+        let _ = cursor.read_until(0, &mut name);
+
+        //Handle if compressed
+        if name.contains(&0xc0) {
+            let _ = cursor.seek_relative(-3);
+            let _ = cursor.read_exact(&mut compressed);
+            name = compressed.to_vec();
+        }
+        let _ = cursor.read_exact(&mut answer_type);
+        let _ = cursor.read_exact(&mut class);
+        let _ = cursor.read_exact(&mut ttl);
+        let _ = cursor.read_exact(&mut length);
+
+        let i_length = u16::from_be_bytes(length) as usize;
+
+        let data = &bytes[cursor.position() as usize..cursor.position() as usize + i_length];
+        cursor.set_position(cursor.position() + i_length as u64);
+
+        let answer = Answer {
+            name,
+            answer_type: u16::from_be_bytes(answer_type),
+            class: u16::from_be_bytes(class),
+            ttl: u32::from_be_bytes(ttl),
+            length: u16::from_be_bytes(length),
+            data: data.to_vec(),
+        };
+
+        answers.push(answer);
     }
-    println!("Name {:?}", name);
-    // println!("cursor {:?}", bytes[cursor.position() as usize]);
-    let _ = cursor.read_exact(&mut answer_type);
-    println!("Answer Type {:?}", answer_type);
-    let _ = cursor.read_exact(&mut class);
-    println!("CLass Type {:?}", class);
-    let _ = cursor.read_exact(&mut ttl);
-    println!("TTl Type {:?}", ttl);
-    let _ = cursor.read_exact(&mut length);
-    println!("Length {:?}", length);
 
-    let i_length = u16::from_be_bytes(length) as usize;
-    println!("{:?}", i_length);
-
-    let data = &bytes[cursor.position() as usize..cursor.position() as usize + i_length];
-
-    // println!("bytes {:?}", bytes);
-    println!("DATA {:?}", data);
-
-    Answer {
-        name,
-        answer_type: u16::from_be_bytes(answer_type),
-        class: u16::from_be_bytes(class),
-        ttl: u32::from_be_bytes(ttl),
-        length: u16::from_be_bytes(length),
-        // data: u32::from_be_bytes(data.try_into().expect("Address must be 4 bytes")),
-        data: data.to_vec(),
-    }
+    answers
 }

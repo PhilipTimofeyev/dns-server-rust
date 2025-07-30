@@ -6,19 +6,19 @@ pub mod question;
 pub struct Packet<'a> {
     pub header: header::Header,
     pub question: &'a question::Question,
-    pub answer: Option<answer::Answer>,
+    pub answers: Option<Vec<answer::Answer>>,
 }
 
 impl<'a> Packet<'a> {
     pub fn new(
         header: header::Header,
         question: &'a question::Question,
-        answer: Option<answer::Answer>,
+        answers: Option<Vec<answer::Answer>>,
     ) -> Self {
         Packet {
             header,
             question,
-            answer,
+            answers,
         }
     }
 
@@ -28,8 +28,10 @@ impl<'a> Packet<'a> {
         bytes.extend_from_slice(&self.header.to_bytes());
         bytes.extend_from_slice(&self.question.to_bytes());
 
-        if let Some(answer) = &self.answer {
-            bytes.extend_from_slice(&answer.to_bytes());
+        if let Some(answers) = &self.answers {
+            for answer in answers {
+                bytes.extend_from_slice(&answer.to_bytes());
+            }
         }
 
         bytes
@@ -62,16 +64,22 @@ impl<'a> Response<'a> {
         bytes
     }
 
-    pub fn new(header: header::Header, packets: &'a Vec<Packet>) -> Self {
+    pub fn new(mut header: header::Header, packets: &'a Vec<Packet>) -> Self {
         let mut questions = Vec::new();
         let mut answers = Vec::new();
 
         for packet in packets {
             questions.push(packet.question);
-            if let Some(answer) = &packet.answer {
-                answers.push(answer);
+            if let Some(packet_answers) = &packet.answers {
+                for answer in packet_answers {
+                    answers.push(answer);
+                }
             }
         }
+
+        // Update header q&a count
+        header.qd_count = questions.len() as u16;
+        header.an_count = answers.len() as u16;
 
         Response {
             header,

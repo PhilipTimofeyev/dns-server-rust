@@ -38,19 +38,13 @@ pub fn run_server() -> Result<()> {
                     packets.push(packet);
                 }
 
-                // Update header's question/answer count
-                header.qd_count = packets.len() as u16;
-                header.an_count = packets.len() as u16;
-
-                forward_to_resolver(&mut packets, resolver_address.as_ref(), &udp_socket)?;
+                forward_to_resolver(&mut packets, resolver_address.as_ref())?;
 
                 // Update header to response from query
                 flags.set_qr_indicator(true);
                 header.flags = flags.into();
 
                 let response = dns::Response::new(header, &packets);
-
-                println!("RESPONSE {:?}", response.to_bytes());
 
                 udp_socket
                     .send_to(&response.to_bytes(), source)
@@ -69,30 +63,25 @@ pub fn run_server() -> Result<()> {
 fn forward_to_resolver(
     packets: &mut [dns::Packet],
     resolver_address: Option<&String>,
-    udp_socket: &UdpSocket,
 ) -> Result<()> {
-    let hmm = UdpSocket::bind("0.0.0.0:0").expect("Failed to bind to address");
+    let resolver_udp = UdpSocket::bind("0.0.0.0:0").expect("Failed to bind to address");
     for packet in packets.iter_mut() {
         let mut resolver_buf = [0u8; 512];
         let mut size = 0;
 
-        println!("{:?}", packet.to_bytes());
-
         if let Some(resolver_address) = resolver_address {
-            let _ = hmm.send_to(&packet.to_bytes(), resolver_address);
-            size = hmm.recv(&mut resolver_buf)?;
+            let _ = resolver_udp.send_to(&packet.to_bytes(), resolver_address);
+            size = resolver_udp.recv(&mut resolver_buf)?;
         }
 
-        println!("{:?}", resolver_buf);
-
-        // If resolver only sends header, build default answer with 0.0.0.0 address
+        // If resolver does not work, build default answer with 0.0.0.0 address
         let answer = if size <= 12 {
-            dns::answer::Answer::new(&packet.question.name)
+            vec![dns::answer::Answer::new(&packet.question.name)]
         } else {
             dns::answer::parse(&resolver_buf[..size])
         };
 
-        packet.answer = Some(answer);
+        packet.answers = Some(answer);
     }
 
     Ok(())
